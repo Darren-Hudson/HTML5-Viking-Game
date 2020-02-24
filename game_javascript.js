@@ -1,5 +1,6 @@
-var controller, player, loop;
-
+var controller, player, loop, buffer, display, resize, render, spriteSheet, players, spatialHash, onScreen;
+var camX =0;
+var camY =0;
 //Defining controller class
 controller =
 {
@@ -36,6 +37,32 @@ controller =
       }
     }
 };
+
+
+
+var SpatialHash = function(cellSize) {
+  this.cellSize = cellSize;
+  this.grid = {};
+ }  
+  
+
+ SpatialHash.prototype.add = function(obj){// -------> Here is our add method 
+  var X = Math.round(obj.x / this.cellSize) * this.cellSize;
+  var Y = Math.round(obj.y / this.cellSize) * this.cellSize;
+  var key = X + "," + Y;
+  if(spatialHash[key] == undefined) spatialHash[key] = []
+  
+  spatialHash[key].push(obj)
+  ;}
+
+ SpatialHash.prototype.getList = function(X,Y){// -------> And the get 
+  X = Math.round(X / this.cellSize) * this.cellSize;
+  Y = Math.round(Y / this.cellSize) * this.cellSize;
+  key = X + "," + Y;
+  return spatialHash[key]
+}
+
+ 
 
 //Defining animation class
 var Animation = function(frameSet, delay)
@@ -79,13 +106,14 @@ Animation.prototype = {
     }
   }
 };
-var players = [player1 = new player("player1",27,14,20,0,true),player2 = new player("player2",27,14,50,0, false)];
 
-var buffer, display, resize, render, spriteSheet;
 
 //Defining buffer and display
 buffer = document.createElement("canvas").getContext("2d");
 display = document.querySelector("canvas").getContext("2d");
+spatialHash = new SpatialHash(15);
+players = [player1 = new player("player1",27,14,20,buffer.canvas.height,true),player2 = new player("player2",27,14,70,buffer.canvas.height, false)];
+
 
 //Player class constructor
 function player (name,height,width,x, y,facingRight)
@@ -112,6 +140,9 @@ spriteSheet =
   image:new Image()
 };
 
+players.forEach(element => {
+  spatialHash.add(element)
+});
 //Loop is called every frame
 loop = function(timeStamp)
 {
@@ -200,7 +231,7 @@ var collisionCheck = function(character)
     character.x = buffer.canvas.width-character.width;
   }
   // Checks Player to player collision
-  if(player1.x+player1.width >= player2.x)
+  if(player1.x+player1.width >= player2.x && player1.y ==player2.y)
   {
     if(player1.attacking && player1.animation.frameIndex == 2 && player1.animation.count == 0){
       player2.hp -= player1.damage;
@@ -223,18 +254,50 @@ var opponentCheck=function()
   }
   if(player2.hp <= 0)
   {
+    player2.y = buffer.canvas.height;
     players.splice(1,1);
   }
 }
 
 //Draws canvas every frame
 render = function(){
-    buffer.fillStyle = "#ffffff";
+    buffer.fillStyle = "#8efaf3";
     buffer.fillRect(0,0,buffer.canvas.width,buffer.canvas.height);
+    buffer.fillStyle = "#3f9c33";
+    buffer.fillRect(0,buffer.canvas.height-10,buffer.canvas.width,10);
+    buffer.fillStyle = "#ffffff";
+    buffer.beginPath();
+    buffer.arc(20, 7, 10, 0, 2 * Math.PI);
+    buffer.arc(30, 7, 7, 0, 2 * Math.PI);
+    buffer.arc(10, 7, 6, 0, 2 * Math.PI);
+    buffer.fill();
+    buffer.beginPath();
+    buffer.arc(70, 15, 5, 0, 2 * Math.PI);
+    buffer.arc(60, 15, 10, 0, 2 * Math.PI);
+    buffer.arc(50, 15, 6, 0, 2 * Math.PI);
+    buffer.fill();
+    buffer.beginPath();
+    buffer.arc(90, 10, 7, 0, 2 * Math.PI);
+    buffer.arc(110, 10, 8, 0, 2 * Math.PI);
+    buffer.arc(100, 10, 9, 0, 2 * Math.PI);
+    buffer.fill();
     buffer.fillStyle = "#000000"
-    // buffer.fillText(player1.hp.toString(),0,10);
-    // buffer.fillText(player2.hp.toString(),buffer.canvas.width-20,10)
-    players.forEach(element => {
+    var padding = 100;
+		var startX = -camX - padding; // -------> Here is where I grab everything from the hash in the given area of the screen
+		var startY = -camY - padding;
+		var endX = -camX + canvas.width + padding;
+		var endY = -camY + canvas.height + padding;
+		var onScreen = []
+		for(var X = startX; X < endX; X += spatialHash.cellSize){
+			for(var Y = startY; Y < endY; Y += spatialHash.cellSize){
+				var sublist = spatialHash.getList(X,Y)
+				if(sublist != undefined) {
+					onScreen = onScreen.concat(sublist)
+				}
+			}
+		}
+
+    onScreen.forEach(element => {
       buffer.drawImage(spriteSheet.image,element.animation.frame * 27,0,27,27,Math.floor(element.x),Math.floor(element.y),27,27);
       if (element.name ==="player2")
       {
@@ -271,6 +334,7 @@ window.addEventListener("keyup",controller.keyListener);
 
 //Calls resize function
 resize();
+
 
 //Requests animation frame on loading of spritesheet
 spriteSheet.image.addEventListener("load", function(event){
