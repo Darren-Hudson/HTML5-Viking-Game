@@ -261,8 +261,8 @@ resize = function()
 };
 
 //Setting buffer dimensions
-buffer.canvas.width = 80;
-buffer.canvas.height = 40;
+buffer.canvas.width = 120;
+buffer.canvas.height = 60;
 
 //Adding event listeners
 window.addEventListener("resize",resize);
