@@ -127,6 +127,7 @@ function player (name,height,width,x, y,facingRight)
   this.attacking = false;
   this.hit = false;
   this.facingRight = facingRight;
+  this.reach = 5;
   this.x=x,
   this.xVelocity=0,
   this.y=y,
@@ -168,14 +169,14 @@ var controllerCheck = function()
     player1.yVelocity -= 2.5;
     player1.jumping = true;
   }
-  //Check for left input
-  if (controller.left.active){
+  //Check for left input, finish attacking before moving.
+  if (controller.left.active && !player1.attacking){
     player1.animation.change(spriteSheet.frameSets[2],15);
     player1.facingRight = false;
     player1.xVelocity -=0.05;
   }
-  //Check for right input
-  if(controller.right.active){
+  //Check for right input, finish attacking before moving.
+  if(controller.right.active && !player1.attacking){
     player1.animation.change(spriteSheet.frameSets[3],15);
     player1.facingRight = true;
     player1.xVelocity +=0.05;
@@ -218,6 +219,10 @@ var physicsCheck = function(character)
     character.y = buffer.canvas.height-2-character.height;
     character.yVelocity=0;
   }
+  if(player1.attacking && player1.x >= player2.x - (player1.width + player1.reach) && player1.animation.frameIndex == 2 && player1.animation.count == 0){
+    player2.hp -= player1.damage;
+    player2.hit = true;
+  }
 }
 var collisionCheck = function(character)
 {
@@ -233,10 +238,6 @@ var collisionCheck = function(character)
   // Checks Player to player collision
   if(player1.x+player1.width >= player2.x && player1.y ==player2.y)
   {
-    if(player1.attacking && player1.animation.frameIndex == 2 && player1.animation.count == 0){
-      player2.hp -= player1.damage;
-      player2.hit = true;
-    }
     player1.x = player2.x-player1.width;
   }
 }
