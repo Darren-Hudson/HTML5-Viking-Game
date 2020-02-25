@@ -1,6 +1,11 @@
-var controller, player, loop, buffer, display, resize, render, spriteSheet, players, spatialHash, onScreen;
-var camX =0;
-var camY =0;
+var controller, player, loop, buffer, display, resize, render, 
+spriteSheet, players, spatialHash, onScreen, camera;
+camera = 
+{
+    camX : 0,
+    camY : 0
+
+}
 //Defining controller class
 controller =
 {
@@ -148,7 +153,6 @@ players.forEach(element => {
 loop = function(timeStamp)
 {
   controllerCheck();
-  
   players.forEach(el =>
     {
       physicsCheck(el);
@@ -229,10 +233,12 @@ var collisionCheck = function(character)
   // Keeps characters from going offscreen
   if (character.x < 0)
   {
+    CameraUpdate(false)
     character.x = 0;
   }
   else if(character.x > buffer.canvas.width- character.width)
   {
+    CameraUpdate(true);
     character.x = buffer.canvas.width-character.width;
   }
   // Checks Player to player collision
@@ -260,10 +266,22 @@ var opponentCheck=function()
   }
 }
 
+function CameraUpdate(right){
+    
+  buffer.translate( camera.camX, camera.camY );
+  if(right)
+  {camera.camX -= 0.01;}
+  else{camera.camX += 0.01;} 
+  
+  
+
+}
+
 //Draws canvas every frame
 render = function(){
+  buffer.clearRect(0, 0, this.canvas.width, this.canvas.height);
     buffer.fillStyle = "#8efaf3";
-    buffer.fillRect(0,0,buffer.canvas.width,buffer.canvas.height);
+    buffer.fillRect(0,0,canvas.width,canvas.height);
     buffer.fillStyle = "#3f9c33";
     buffer.fillRect(0,buffer.canvas.height-10,buffer.canvas.width,10);
     buffer.fillStyle = "#ffffff";
@@ -284,10 +302,10 @@ render = function(){
     buffer.fill();
     buffer.fillStyle = "#000000"
     var padding = 100;
-		var startX = -camX - padding; // -------> Here is where I grab everything from the hash in the given area of the screen
-		var startY = -camY - padding;
-		var endX = -camX + canvas.width + padding;
-		var endY = -camY + canvas.height + padding;
+		var startX = -camera.camX - padding; // -------> Here is where I grab everything from the hash in the given area of the screen
+		var startY = -camera.camY - padding;
+		var endX = -camera.camX + canvas.width + padding;
+		var endY = -camera.camY + canvas.height + padding;
 		var onScreen = []
 		for(var X = startX; X < endX; X += spatialHash.cellSize){
 			for(var Y = startY; Y < endY; Y += spatialHash.cellSize){
@@ -299,14 +317,14 @@ render = function(){
 		}
 
     onScreen.forEach(element => {
-      buffer.drawImage(spriteSheet.image,element.animation.frame * 27,0,27,27,Math.floor(element.x),Math.floor(element.y),27,27);
+      buffer.drawImage(spriteSheet.image,element.animation.frame * 27,0,27,27,camera.camX+Math.floor(element.x),camera.camY+Math.floor(element.y),27,27);
       if (element.name ==="player2")
       {
         buffer.fillText(player2.hp.toString(),buffer.canvas.width-20,10)
       }
       else
       {
-        buffer.fillText(element.hp.toString(),0,10);
+        buffer.fillText(element.hp.toString(),camera.camX+20,10);
       }
     });
     
